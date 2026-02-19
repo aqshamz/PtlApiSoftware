@@ -22,6 +22,8 @@ public class RecoveryService : IHostedService
             _runner.RestoreTransaction(tx);
         }
 
+        _runner.RecoveryCompleted = true;
+
         return Task.CompletedTask;
     }
 

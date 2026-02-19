@@ -5,6 +5,8 @@
         public int Gateaway { get; set; }
         public int Tag { get; set; }
         public int Qty { get; set; }
-        public string TxDetailId { get; set; } = default!;
+        public string? TxDetailId { get; set; } = default!;
+
+        public string Sku { get; set; } = default!;
     }
 }

@@ -24,11 +24,10 @@ public class JsonPickEventStore : IPickEventStore
         lock (_lock)
         {
             var list = LoadAll();
-            var evt = list.First(e => e.EventId == eventId);
-            if (evt == null) return;
+            var removed = list.RemoveAll(e => e.EventId == eventId);
 
-            evt.Processed = true;
-            Save(list);
+            if (removed > 0)
+                Save(list);
         }
     }
 

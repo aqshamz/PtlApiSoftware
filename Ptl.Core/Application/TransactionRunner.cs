@@ -21,6 +21,8 @@ namespace Ptl.Agent.Application
 
         private readonly object _sync = new();
 
+        public volatile bool RecoveryCompleted = false;
+
         public TransactionRunner(
             ITransactionSource txSource,
             IPickEventStore eventStore,
@@ -35,36 +37,33 @@ namespace Ptl.Agent.Application
             _notifier = notifier;
         }
 
-        // LOAD ONE TRANSACTION (CALLED BY API / CRON)
-        public void SeedTestTag(int gateway, int tag, int qty, string txDetailId)
-        {
-            var tx = new PickTransaction
-            {
-                TransactionId = "TEST-TX",
-                HeaderGetaway = gateway,
-                HeaderTag = 99
-            };
+        //public void DecreaseTag(TagState state)
+        //{
+        //    if (state.Quantity <= 0)
+        //        return;
 
-            tx.ActiveTags.Add(tag);
+        //    state.Decrease();
 
-            _transactions[tx.TransactionId] = tx;
-            _tagStates[tag] = new TagState(gateway, tag, qty, txDetailId);
-            _tagToTransaction[tag] = tx.TransactionId;
-        }
-
-        public void DecreaseTag(TagState state)
+        //    _display.DisplayQty(
+        //        state.Gateaway,
+        //        state.Tag,
+        //        state.Quantity
+        //    );
+        //}
+        public async Task DecreaseTag(TagState state)
         {
             if (state.Quantity <= 0)
                 return;
 
             state.Decrease();
 
-            _display.DisplayQty(
+            await _display.DisplayQty(
                 state.Gateaway,
                 state.Tag,
                 state.Quantity
             );
         }
+
 
 
         public PickTransaction? GetNextTransaction()
@@ -117,10 +116,19 @@ namespace Ptl.Agent.Application
                 return tx;
             }
         }
-
-        public void StartTransaction(PickTransaction tx)
+        public async Task StartTransaction(PickTransaction tx)
         {
-            // 🔥 MARK AS PROCESSING (status = 1)
+            if (!MarkTransactionProcessing(tx))
+                return;
+
+            RegisterTransaction(tx);
+
+            await ShowHeader(tx);
+            await ShowActiveTags(tx);
+        }
+
+        private bool MarkTransactionProcessing(PickTransaction tx)
+        {
             bool ok = _txSource.UpdateTransaction(tx.TransactionId, 1);
 
             if (!ok)
@@ -128,33 +136,117 @@ namespace Ptl.Agent.Application
                 _actionSink.EnqueuePendingAction(
                     PendingDbAction.ForTransaction(tx.TransactionId)
                 );
-                return;
+                return false;
             }
 
+            return true;
+        }
+
+        private void RegisterTransaction(PickTransaction tx)
+        {
             lock (_sync)
             {
                 if (_transactions.ContainsKey(tx.TransactionId))
                     return;
+
                 tx.IsStarted = true;
                 _transactions[tx.TransactionId] = tx;
             }
+        }
 
-            _display.ShowHeader(
+        private async Task ShowHeader(PickTransaction tx)
+        {
+            await _display.ShowHeader(
                 tx.HeaderGetaway,
                 tx.HeaderTag,
                 tx.HeaderText
             );
+        }
 
+        //private void ShowActiveTags(PickTransaction tx)
+        //{
+        //    lock (_sync)
+        //    {
+        //        var readyTags = _display.GetReadyTags(tx.HeaderGetaway);
+
+        //        //if (!readyTags.Contains(tx.HeaderTag))
+        //        //{
+        //        //    Console.WriteLine(
+        //        //        $"[PTL][BLOCK] Header tag {tx.HeaderTag} unavailable on gateway {tx.HeaderGetaway}. Blocking TX {tx.TransactionId}"
+        //        //    );
+
+        //        //    // Mark transaction as blocked
+        //        //    _txSource.UpdateTransaction(tx.TransactionId, 3);
+
+        //        //    // Optional: notify / enqueue action
+        //        //    _actionSink.EnqueuePendingAction(
+        //        //        PendingDbAction.ForTransaction(tx.TransactionId)
+        //        //    );
+
+        //        //    return;
+        //        //}
+
+        //        foreach (var tag in tx.ActiveTags.ToList())
+        //        {
+        //            //if (!readyTags.Contains(tag))
+        //            //{
+        //            //    HandleUnavailableTag(tag);
+        //            //    continue;
+        //            //}
+
+        //            var state = _tagStates[tag];
+        //            _display.DisplayQty(state.Gateaway, tag, state.Quantity);
+        //        }
+        //    }
+        //}
+        private async Task ShowActiveTags(PickTransaction tx)
+        {
+            IReadOnlySet<int> readyTags;
+
+            // 1️⃣ Query hardware OUTSIDE lock
+            readyTags = await _display.GetReadyTags(tx.HeaderGetaway);
+
+            Console.WriteLine(
+                $"[PTL][READY] GW={tx.HeaderGetaway}, Count={readyTags.Count}, Tags={string.Join(",", readyTags.Take(20))}"
+            );
+
+            List<TagState> statesToDisplay;
+
+            // 2️⃣ Filter tags INSIDE lock
             lock (_sync)
             {
-                foreach (var tag in tx.ActiveTags)
-                {
-                    var state = _tagStates[tag];
-                    _display.DisplayQty(state.Gateaway, tag, state.Quantity);
-                }
+                statesToDisplay = tx.ActiveTags
+                    //.Where(tag => readyTags.Contains(tag))
+                    .Select(tag => _tagStates[tag])
+                    .ToList();
+            }
+
+            // 3️⃣ Send commands OUTSIDE lock
+            foreach (var state in statesToDisplay)
+            {
+                await _display.DisplayQty(
+                    state.Gateaway,
+                    state.Tag,
+                    state.Quantity
+                );
             }
         }
 
+
+        private void HandleUnavailableTag(int tag)
+        {
+            var state = _tagStates[tag];
+
+            _txSource.MarkDetailUnavailable(state.TxDetailId); // status_picked = 2
+
+            _tagStates.Remove(tag);
+            _tagToTransaction.Remove(tag);
+
+            foreach (var tx in _transactions.Values)
+            {
+                tx.ActiveTags.Remove(tag);
+            }
+        }
 
         public void CompleteTransaction(PickTransaction tx)
         {
@@ -174,7 +266,7 @@ namespace Ptl.Agent.Application
             }
         }
 
-        public void CompleteTag(TagState state, PickTransaction tx)
+        public async Task CompleteTag(TagState state, PickTransaction tx)
         {
             if (!tx.IsStarted)
                 return;
@@ -202,7 +294,7 @@ namespace Ptl.Agent.Application
             }
 
             if (tx.IsCompleted) { 
-                _display.ClearHeader(tx.HeaderGetaway, tx.HeaderTag);
+                await _display.ClearHeader(tx.HeaderGetaway, tx.HeaderTag);
                 lock (_sync)
                 {
                     _transactions.Remove(tx.TransactionId);
@@ -299,7 +391,7 @@ namespace Ptl.Agent.Application
             return tx;
         }
 
-        public void RestoreTransaction(PickTransaction tx)
+        public async Task RestoreTransaction(PickTransaction tx)
         {
             lock (_sync)
             {
@@ -311,20 +403,20 @@ namespace Ptl.Agent.Application
 
             Console.WriteLine($"[RECOVERY] Restoring TX {tx.TransactionId}");
 
-            _display.ShowHeader(
+            await _display.ShowHeader(
                 tx.HeaderGetaway,
                 tx.HeaderTag,
                 tx.HeaderText
             );
 
             lock (_sync)
-    {
-        foreach (var tag in tx.ActiveTags)
-        {
-            var state = _tagStates[tag];
-            _display.DisplayQty(state.Gateaway, tag, state.Quantity);
-        }
-    }
+            {
+                foreach (var tag in tx.ActiveTags)
+                {
+                    var state = _tagStates[tag];
+                    _display.DisplayQty(state.Gateaway, tag, state.Quantity);
+                }
+            }
         }
 
 

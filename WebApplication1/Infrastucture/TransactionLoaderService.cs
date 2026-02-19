@@ -12,6 +12,11 @@ public class TransactionLoaderService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        while (!_runner.RecoveryCompleted && !stoppingToken.IsCancellationRequested)
+        {
+            await Task.Delay(100, stoppingToken);
+        }
+
         Console.WriteLine("[LOADER] Transaction loader started");
 
         while (!stoppingToken.IsCancellationRequested)

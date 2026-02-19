@@ -20,6 +20,20 @@ namespace DAPCAPS
             public string ccbdata;
         }
 
+        //testing C#
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct QWAY_CCB_RAW
+        {
+            public int ccblen;
+            public byte ccbport;
+            public byte ccbdnode;
+            public byte ccbsnode;
+            public byte ccbcmd;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)]
+            public byte[] ccbdata;
+        }
+
         static public string AB_ErrMsg(int ret)
         {
             string returnValue;
@@ -105,6 +119,11 @@ namespace DAPCAPS
         //  // Get/Send message from/to Gateway
         [DllImport("dapapi")]
        public static extern int AB_GW_RcvMsg(int Gateway_id, ref QWAY_CCB ccb);
+
+        //testing C#
+        [DllImport("dapapi", EntryPoint = "AB_GW_RcvMsg")]
+        public static extern int AB_GW_RcvMsg_RAW(int Gateway_id, ref QWAY_CCB_RAW ccb);
+
         [DllImport("dapapi")]
         public static extern int AB_GW_SndMsg(int Gateway_id, ref QWAY_CCB ccb);
         [DllImport("dapapi")]

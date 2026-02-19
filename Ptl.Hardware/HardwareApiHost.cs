@@ -22,6 +22,12 @@ public static class HardwareApiHost
             return Results.Ok();
         });
 
+        app.MapGet("/ptl/ready-tags/{gateway:int}", async (int gateway) =>
+        {
+            var ready = await display.GetReadyTags(gateway);
+            return Results.Ok(ready);
+        });
+
         app.Start();
     }
 }

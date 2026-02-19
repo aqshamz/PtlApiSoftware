@@ -13,5 +13,7 @@
         public string? Text { get; set; }
 
         public bool ClearHeader { get; set; }
+
+        public bool CheckGateaway { get; set; }
     }
 }

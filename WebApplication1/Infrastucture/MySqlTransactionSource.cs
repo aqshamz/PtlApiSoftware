@@ -81,7 +81,8 @@ public class MySqlTransactionSource : ITransactionSource
             id          AS TxDetailId,
             gateaway    AS Gateaway,
             address     AS Tag,
-            qty         AS Qty
+            qty         AS Qty,
+            sku         AS Sku
         FROM transaction_detail
         WHERE transaction_id = @TxId
           AND status_picked = 0;
@@ -124,5 +125,18 @@ public class MySqlTransactionSource : ITransactionSource
         """, new { txDetailId, qty });
 
        return rows == 1;
+    }
+
+    public bool MarkDetailUnavailable(string txDetailId)
+    {
+        using var conn = new MySqlConnection(_cs);
+
+        const string sql = """
+            UPDATE transaction_detail
+            SET status_picked = 2
+            WHERE id = @txDetailId;
+        """;
+
+        return conn.Execute(sql, new { txDetailId }) > 0;
     }
 }
