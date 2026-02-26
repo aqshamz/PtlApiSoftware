@@ -1,7 +1,10 @@
-﻿using Ptl.Contracts.Dtos.Hardware;
+﻿using DAPCAPS;
+using Ptl.Contracts.Dtos.Hardware;
 using Ptl.Hardware;
+using System.Net;
 using System.Net.Http.Json;
 using System.Runtime.InteropServices;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 internal static class Program
 {
@@ -38,6 +41,18 @@ internal static class Program
         IpIndexWriter.Write(gateways);
 
         // 3️⃣ Init CAPS (NOW it sees IPINDEX)
+        PtlInitializer.OnGatewayStatusChanged += async (gatewayId, status) =>
+        {
+            var gw = gateways.First(g => g.GatewayId == gatewayId);
+
+            await api.PostAsJsonAsync(
+                "/ptl/hardware/status",
+                new UpdateGatewayStatusRequest(gw.IpAddress, status)
+            );
+
+            Console.WriteLine($"[HW] Status sent → ip={gw.IpAddress}, status={status}");
+        };//gateaway pg
+
         PtlInitializer.Init(gateways);
 
         // 4️⃣ Start hardware display + API host
