@@ -15,6 +15,13 @@ public class PostgresConnectionFactory
         return new NpgsqlConnection(_connectionString);
     }
 
+    public async Task<NpgsqlConnection> CreateOpenConnectionAsync()
+    {
+        var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync();
+        return conn;
+    }
+
     public async Task<bool> TestConnectionAsync()
     {
         try

@@ -22,6 +22,7 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<ITransactionSource, MySqlTransactionSource>(); //db
 builder.Services.AddSingleton<PostgresConnectionFactory>(); //postgredb
 
+builder.Services.AddScoped<IBatchRepository, PostgresBatchRepository>();//pgrepository get data tx
 builder.Services.AddScoped<ITransactionCommandRepository, TransactionCommandRepository>();
 
 // 🔹 No-op infra
@@ -41,8 +42,7 @@ builder.Services.AddHttpClient("hardware", c =>
 
 builder.Services.AddSingleton<Phase2TagRegistry>();
 
-builder.Services.AddScoped<BatchPhase1Service>(); //pg service
-builder.Services.AddScoped<BatchPhase1RxService>(); //pg service
+builder.Services.AddScoped<BatchRxService>(); //pg service
 
 builder.Services.AddScoped<BatchEngineService>(); //pg service
 builder.Services.AddHostedService<BatchEngineBackgroundService>(); //pg service

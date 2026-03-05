@@ -29,7 +29,7 @@ public class PtlController : ControllerBase
     [HttpPost("rx")] //pg
     public async Task<IActionResult> Receive(
     [FromBody] PtlRxEventDto evt,
-    [FromServices] BatchPhase1RxService phase1Rx)
+    [FromServices] BatchRxService phase1Rx)
     {
         await phase1Rx.HandleAsync(evt);
         return Ok();

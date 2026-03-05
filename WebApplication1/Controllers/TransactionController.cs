@@ -28,11 +28,4 @@ public class TransactionController : ControllerBase
         return Ok();
     }
 
-    [HttpPost("phase1")]
-    public async Task<IActionResult> Phase1(
-    [FromServices] BatchPhase1Service svc)
-    {
-        await svc.ProcessAsync();
-        return Ok();
-    }
 }
