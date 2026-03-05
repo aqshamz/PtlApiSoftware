@@ -19,4 +19,13 @@ public class TransactionController : ControllerBase
         _repo.InsertTransaction(dto);
         return Ok(new { dto.TxId });
     }
+
+    [HttpPost("load-batch")]
+    public async Task<IActionResult> LoadBatch(
+    [FromServices] BatchLoaderService loader)
+    {
+        await loader.LoadTransactionsAsync();
+        return Ok();
+    }
+
 }
