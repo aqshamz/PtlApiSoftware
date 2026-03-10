@@ -74,16 +74,15 @@ public class BatchRxService
         if (batchNoNullable is not int batchNo)
             return;
 
-        await _batchRepository.MarkTD4Checked(batchNo, tag, "2"); //update td4 receive
+        await _batchRepository.MarkTD4Checked(batchNo, tag, "2", gw.IpAddress); //update td4 receive
 
-        if (await _batchRepository.HasPendingTd4(batchNo)) //check if td4 still active
+        if (await _batchRepository.HasPendingTd4(batchNo, gw.IpAddress)) //check if td4 still active
             return;
 
         await _batchRepository.UpdateFlagBatchUrut(batchNo, 0, gw.TabelAwal); // Mark batch 0
 
         // Clear header
-        var headerTag = await _batchRepository
-        .GetTd3HeaderTag(batchNo);
+        var headerTag = await _batchRepository.GetTd3HeaderTag(batchNo, gw.IpAddress);
 
         if (headerTag is int header)
         {
@@ -105,8 +104,7 @@ public class BatchRxService
 
         int finalQty = state.Quantity;
 
-        var result = await _batchRepository
-        .ConfirmPick(gw.TabelAwal, tag, finalQty); //phase 2 logic transaction
+        var result = await _batchRepository.ConfirmPick(gw.TabelAwal, tag, finalQty, gw.IpAddress); //phase 2 logic transaction
 
         if (result == null)
             return;
@@ -119,7 +117,7 @@ public class BatchRxService
             return;
         }
 
-        var header = await _batchRepository.GetTd0Header(result.BatchNo, result.Plu);
+        var header = await _batchRepository.GetTd0Header(result.BatchNo, result.Plu, gw.IpAddress);
 
         if (header != null)
         {
@@ -140,7 +138,7 @@ public class BatchRxService
         }
 
         // 🔥 ALL PLU DONE → END BATCH
-        var endRow = await _batchRepository.GetTd5Header(result.BatchNo); //get TD5
+        var endRow = await _batchRepository.GetTd5Header(result.BatchNo, gw.IpAddress); //get TD5
 
         if (endRow == null)
             return;

@@ -1,12 +1,23 @@
 ﻿using DAPCAPS;
 using Ptl.Contracts.Dtos.Hardware;
-using System;
-using System.Threading;
 
 public class EventLoop
 {
-    public event Action<int, short>? OnTagCommand;
     public event Action<PtlRxEventDto>? OnRx;
+    public event Action<int, int>? OnGatewayStatusChanged;
+
+    private readonly List<PtlGatewayConfig> _gateways;
+
+    private readonly Dictionary<int, int> _lastStatus = new();
+
+    public EventLoop(List<PtlGatewayConfig> gateways)
+    {
+        _gateways = gateways;
+
+        foreach (var g in gateways)
+            _lastStatus[g.GatewayId] = -1;
+    }
+
     public void Start()
     {
         new Thread(Loop)
@@ -21,6 +32,8 @@ public class EventLoop
         int len;
 
         Console.WriteLine("RX LOOP ACTIVE");
+
+        DateTime lastGatewayCheck = DateTime.MinValue;
 
         while (true)
         {
@@ -39,9 +52,10 @@ public class EventLoop
                 ref len
             );
 
-            if (ret > 0 && cmd != 9) // ignore diag spam
+            if (ret > 0 && cmd != 9)
             {
                 int tag = Math.Abs(node);
+
                 var evt = new PtlRxEventDto
                 {
                     Gateway = gw,
@@ -52,7 +66,32 @@ public class EventLoop
                 OnRx?.Invoke(evt);
             }
 
+            // gateway health check every 5 sec
+            if ((DateTime.Now - lastGatewayCheck).TotalSeconds > 5)
+            {
+                CheckGateways();
+                lastGatewayCheck = DateTime.Now;
+            }
+
             Thread.Sleep(50);
+        }
+    }
+
+    private void CheckGateways()
+    {
+        foreach (var gw in _gateways)
+        {
+            int diag = CapsAPI.AB_GW_TagDiag(gw.GatewayId, 0);
+            int status = diag >= 0 ? 1 : 0;
+
+            if (_lastStatus[gw.GatewayId] != status)
+            {
+                _lastStatus[gw.GatewayId] = status;
+
+                Console.WriteLine($"[HW MONITOR] gw={gw.GatewayId} status={status}");
+
+                OnGatewayStatusChanged?.Invoke(gw.GatewayId, status);
+            }
         }
     }
 }

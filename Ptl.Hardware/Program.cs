@@ -40,8 +40,17 @@ internal static class Program
         // 2️⃣ Write IPINDEX
         IpIndexWriter.Write(gateways);
 
-        // 3️⃣ Init CAPS (NOW it sees IPINDEX)
-        PtlInitializer.OnGatewayStatusChanged += async (gatewayId, status) =>
+        //// 3️⃣ Init CAPS (NOW it sees IPINDEX)
+        PtlInitializer.Init(gateways);
+
+        // 4️⃣ Start hardware display + API host
+        var display = new HardwarePtlDisplay();
+        HardwareApiHost.Start(display);
+
+        // 5️⃣ RX loop
+        EventLoop loop = new EventLoop(gateways);
+
+        loop.OnGatewayStatusChanged += async (gatewayId, status) => //check status gateaway 5 detik sekali
         {
             var gw = gateways.First(g => g.GatewayId == gatewayId);
 
@@ -51,16 +60,7 @@ internal static class Program
             );
 
             Console.WriteLine($"[HW] Status sent → ip={gw.IpAddress}, status={status}");
-        };//gateaway pg
-
-        PtlInitializer.Init(gateways);
-
-        // 4️⃣ Start hardware display + API host
-        var display = new HardwarePtlDisplay();
-        HardwareApiHost.Start(display);
-
-        // 5️⃣ RX loop
-        EventLoop loop = new EventLoop();
+        };
 
         loop.OnRx += async evt =>
         {

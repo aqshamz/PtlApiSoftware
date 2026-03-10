@@ -4,20 +4,23 @@ using Ptl.Contracts.Dtos.Hardware;
 public class BatchEngineService
 {
     private readonly ConnectedGatewayRegistry _registry;
-    private readonly Phase2TagRegistry _tagRegistry; 
+    private readonly Phase2TagRegistry _tagRegistry;
     private readonly IBatchRepository _batchRepository;
     private readonly IPtlDisplay _display;
+    private readonly IRecoveryState _recovery;
 
     public BatchEngineService(
         ConnectedGatewayRegistry registry,
         Phase2TagRegistry tagRegistry,
         IBatchRepository batchRepository,
-        IPtlDisplay display)
+        IPtlDisplay display,
+        IRecoveryState recovery)
     {
         _registry = registry;
         _tagRegistry = tagRegistry;
         _batchRepository = batchRepository;
         _display = display;
+        _recovery = recovery;
     }
 
     public async Task ProcessAsync()
@@ -25,9 +28,20 @@ public class BatchEngineService
         var gateways = _registry.GetConnected().ToList(); //ambil gateaway avaiable
         if (!gateways.Any()) return;
 
-        await Task.WhenAll( 
-            gateways.Select(ProcessGateway) //jalankan paralel transaksi tiap gateaway
-        );
+        var tasks = new List<Task>();
+
+        foreach (var gw in gateways)
+        {
+            if (_recovery.IsRecovering(gw.GatewayId)) //jika recovery sedang jalan di gateaway tersebut, tx baru gak diambil
+            {
+                Console.WriteLine($"[ENGINE] Gateway {gw.GatewayId} recovering, skip");
+                continue;
+            }
+
+            tasks.Add(ProcessGateway(gw));
+        }
+
+        await Task.WhenAll(tasks); //tx paralel jalan per gateaway
     }
 
     private async Task ProcessGateway(GatewayRuntimeInfo gw)
@@ -55,7 +69,7 @@ public class BatchEngineService
             return;
 
         var headerTag = await _batchRepository
-            .GetNextTD3Header(batchNo); //get header
+            .GetNextTD3Header(batchNo, gw.IpAddress); //get header
 
         if (headerTag is not int tag)
             return;
@@ -64,16 +78,15 @@ public class BatchEngineService
 
         await _display.ShowHeader(gw.GatewayId, tag, $"BATCH - {batchNo}");
 
-        await _batchRepository.MarkTD3HeaderChecked(batchNo); //update td3 send
+        await _batchRepository.MarkTD3HeaderChecked(batchNo, gw.IpAddress); //update td3 send
 
-        var td4Tags = await _batchRepository
-        .GetPendingTD4Tags    (batchNo); //td4
+        var td4Tags = await _batchRepository.GetPendingTD4Tags(batchNo, gw.IpAddress); //td4
 
         foreach (var td4Tag in td4Tags)
         {
             await _display.DisplayQty(gw.GatewayId, td4Tag, td4Tag);
             
-            await _batchRepository.MarkTD4Checked(batchNo, td4Tag, "1"); //update td4 send
+            await _batchRepository.MarkTD4Checked(batchNo, td4Tag, "1", gw.IpAddress); //update td4 send
         }
     }
 
@@ -101,8 +114,7 @@ public class BatchEngineService
         int plu)
     {
         // TD0 Header
-        var header = await _batchRepository
-        .GetTd0Header(batchNo, plu); //header batch TD0
+        var header = await _batchRepository.GetTd0Header(batchNo, plu, gw.IpAddress); //header batch TD0
 
         if (header == null)
             return;
@@ -111,11 +123,11 @@ public class BatchEngineService
 
         await _display.ShowHeader(gw.GatewayId, header.LokasiPtl, header.Descp);
 
-        await _batchRepository.MarkTd0Checked(batchNo, plu); //TD0 FLAGCEK1
+        await _batchRepository.MarkTd0Checked(batchNo, plu, gw.IpAddress); //TD0 FLAGCEK1
 
         // D0 → D1
         var rows = await _batchRepository
-        .GetD0Items(batchNo, plu); //D0 Data
+        .GetD0Items(batchNo, plu, gw.IpAddress); //D0 Data
 
         foreach (var row in rows)
         {
@@ -131,8 +143,7 @@ public class BatchEngineService
             _tagRegistry.Set(state);
 
             //flag_cek = '1' kuduny
-            await _batchRepository
-            .MarkD0AsD1(batchNo, plu, row.LokasiPtl); //D0 flagcek 1
+            await _batchRepository.MarkD0AsD1(batchNo, plu, row.LokasiPtl, gw.IpAddress); //D0 flagcek 1
         }
 
         await _batchRepository
