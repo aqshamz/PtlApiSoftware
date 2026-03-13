@@ -1,6 +1,5 @@
 ﻿using DAPCAPS;
 using Ptl.Contracts.Dtos.Hardware;
-using Ptl.Core.Interfaces;
 using static DAPCAPS.CapsAPI;
 
 public class HardwarePtlDisplay : IPtlDisplay

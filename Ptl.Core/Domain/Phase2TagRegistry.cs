@@ -28,4 +28,9 @@ public class Phase2TagRegistry
             _tags.Remove(tag);
         }
     }
+
+    public bool Exists(int tag)
+    {
+        return _tags.ContainsKey(tag);
+    }
 }

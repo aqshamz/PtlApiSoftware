@@ -29,12 +29,12 @@ public class PostgresConnectionFactory
             using var conn = CreateConnection();
             await conn.OpenAsync();
 
-            Console.WriteLine("✅ PostgreSQL Connected Successfully!");
+            //Console.WriteLine("PostgreSQL Connected Successfully!");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine("❌ PostgreSQL Connection Failed:");
+            //Console.WriteLine("PostgreSQL Connection Failed:");
             Console.WriteLine(ex.Message);
             return false;
         }

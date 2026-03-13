@@ -1,48 +1,152 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Ptl.Contracts.Dtos.Hardware;
+using System.Text.Json;
 
 [ApiController]
 [Route("ptl/hardware")]
 public class HardwareConfigController : ControllerBase
 {
-    //private readonly PtlHardwareRepository _repo; // mysql
     private readonly PtlPostgresHardwareRepository _repo; // pgsql
     private readonly ConnectedGatewayRegistry _registry; //register available ip pg
+    private readonly RecoveryService _recovery;  //recovery
 
-    //public HardwareConfigController(PtlHardwareRepository repo) // mysql
     public HardwareConfigController(
         PtlPostgresHardwareRepository repo, 
-        ConnectedGatewayRegistry registry) // pgsql
+        ConnectedGatewayRegistry registry,
+        RecoveryService recovery) // pgsql
     {
         _repo = repo;
         _registry = registry;
+        _recovery = recovery;
     }
 
     [HttpGet("gateways")]
     public IActionResult GetGateways()
-        => Ok(_repo.GetGateways());
+    {
+        try
+        {
+            var gateways = _repo.GetGateways().ToList(); // get data from pg db
+
+            System.IO.File.WriteAllText(
+                "gateways_cache_api.json",
+                System.Text.Json.JsonSerializer.Serialize(gateways, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                })
+            ); //put into json
+
+            return Ok(gateways);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[API] DB unavailable, loading cached gateways");
+
+            if (!System.IO.File.Exists("gateways_cache_api.json")) //current json empty
+                return StatusCode(500, "Gateway configuration unavailable");
+
+            var json = System.IO.File.ReadAllText("gateways_cache_api.json"); //load old json
+
+            var gateways = System.Text.Json.JsonSerializer
+                .Deserialize<List<PtlGatewayConfigExtended>>(json); //serialize json
+
+            return Ok(gateways);
+        }
+    }
 
     [HttpPost("status")]
-    public IActionResult UpdateStatus([FromBody] UpdateGatewayStatusRequest request)
+    public async Task<IActionResult> UpdateStatus([FromBody] UpdateGatewayStatusRequest request)
     {
-        _repo.UpdateStatus(request.IpAddress, request.Status);
+        GatewayRuntimeInfo? gateway = null;
 
-        var gateway = _repo.GetGateways()
-        .First(g => g.IpAddress == request.IpAddress);
+        try
+        {
+            var gw = _repo.GetGateways().FirstOrDefault(g => g.IpAddress == request.IpAddress); //ambil dari db
 
-        if (request.Status == 1)
+            if (gw != null)
+            {
+                gateway = new GatewayRuntimeInfo
+                {
+                    GatewayId = gw.GatewayId,
+                    IpAddress = gw.IpAddress,
+                    TabelAwal = gw.TabelAwal
+                };
+            }
+        }
+        catch
+        {
+            Console.WriteLine("[API] DB unavailable while resolving gateway");
+        }
+
+        if (gateway == null)
+        {
+            try
+            {
+                if (System.IO.File.Exists("gateways_cache_api.json")) //dari json
+                {
+                    var json = System.IO.File.ReadAllText("gateways_cache_api.json");
+
+                    var cached = System.Text.Json.JsonSerializer
+                        .Deserialize<List<PtlGatewayConfigExtended>>(json);
+
+                    var cachedGateway = cached?
+                        .FirstOrDefault(g => g.IpAddress == request.IpAddress);
+
+                    if (cachedGateway != null)
+                    {
+                        gateway = new GatewayRuntimeInfo
+                        {
+                            GatewayId = cachedGateway.GatewayId,
+                            IpAddress = cachedGateway.IpAddress,
+                            TabelAwal = cachedGateway.TabelAwal
+                        };
+                    }
+                }
+            }
+            catch
+            {
+                Console.WriteLine("[API] Failed to load gateway from cache");
+            }
+        }
+
+        if (gateway == null)
+        {
+            Console.WriteLine($"[API] Gateway config not found for IP {request.IpAddress}");
+            return Ok();
+        }
+
+        if (request.Status == 1 && !_registry.IsConnected(gateway.GatewayId)) //kalo status berubah jadi 1 dari 0
         {
             _registry.SetConnected(
                 gateway.GatewayId,
                 gateway.IpAddress,
                 gateway.TabelAwal
             );
+
+            await Task.Delay(1500);
+
+            try
+            {
+                await _recovery.RecoverGateway(gateway);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[API] Recovery skipped: {ex.Message}");
+            }
+
         }
-        else
+        else if(request.Status == 0)
         {
-            _registry.SetDisconnected(gateway.GatewayId);
+            _registry.SetDisconnected(gateway.GatewayId); //kalo status berubah jadi 0
         }
 
+        try
+        {
+            _repo.UpdateStatus(request.IpAddress, request.Status); //update db
+        }
+        catch
+        {
+            Console.WriteLine("[API] DB unavailable, skipping status update");
+        }
 
         return Ok();
     }

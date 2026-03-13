@@ -1,0 +1,18 @@
+[
+  {
+    "GatewayId": 1,
+    "Port": 4660,
+    "IpAddress": "10.0.71.101",
+    "Zona": "R1",
+    "TabelAwal": "PTL_URUT_PLU_G2_ZR1",
+    "StatusCon": 1
+  },
+  {
+    "GatewayId": 2,
+    "Port": 4660,
+    "IpAddress": "199.99.7.13",
+    "Zona": "R2",
+    "TabelAwal": "PTL_URUT_PLU_G2_ZR2",
+    "StatusCon": 0
+  }
+]
