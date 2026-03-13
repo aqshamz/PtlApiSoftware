@@ -67,7 +67,7 @@ public class EventLoop
             }
 
             // gateway health check every 5 sec
-            if ((DateTime.Now - lastGatewayCheck).TotalSeconds > 5)
+            if ((DateTime.Now - lastGatewayCheck).TotalSeconds > 5) //cek status gateaway tiap 5 detik
             {
                 CheckGateways();
                 lastGatewayCheck = DateTime.Now;

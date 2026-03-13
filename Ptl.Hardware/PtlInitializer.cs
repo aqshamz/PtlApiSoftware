@@ -1,6 +1,5 @@
 ﻿using DAPCAPS;
 using Ptl.Contracts.Dtos.Hardware;
-using Ptl.Hardware;
 
 public static class PtlInitializer
 {

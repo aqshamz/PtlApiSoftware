@@ -2,7 +2,6 @@
 
 public class ConnectedGatewayRegistry
 {
-    //private readonly Dictionary<int, GatewayRuntimeInfo> _gateways = new();
     private readonly ConcurrentDictionary<int, GatewayRuntimeInfo> _gateways = new();
     public void SetConnected(int gatewayId, string ip, string tabelAwal)
     {
@@ -17,7 +16,6 @@ public class ConnectedGatewayRegistry
     public void SetDisconnected(int gatewayId)
     {
         _gateways.TryRemove(gatewayId, out _);
-        //_gateways.Remove(gatewayId);
     }
 
     public bool IsConnected(int gatewayId)

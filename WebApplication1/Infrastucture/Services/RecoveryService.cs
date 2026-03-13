@@ -1,7 +1,5 @@
 ﻿using Microsoft.Win32;
 using Ptl.Agent.Domain;
-using Ptl.Core.Application;
-using Ptl.Core.Interfaces;
 
 public class RecoveryService : IHostedService, IRecoveryState
 {

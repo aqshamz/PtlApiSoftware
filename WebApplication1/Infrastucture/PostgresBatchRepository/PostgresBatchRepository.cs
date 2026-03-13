@@ -1,7 +1,5 @@
 ﻿using Dapper;
 using Npgsql;
-using Ptl.Core.Interfaces;
-
 public class PostgresBatchRepository : IBatchRepository
 {
     private readonly PostgresConnectionFactory _factory;
@@ -37,7 +35,7 @@ public class PostgresBatchRepository : IBatchRepository
             select distinct batch_no
             from {tableName}
             where flag_batch = @flagBatch
-            limit 1";
+            order by batch_no asc limit 1";
 
         return await conn.ExecuteScalarAsync<int?>(sql, new { flagBatch });
     }
@@ -116,7 +114,7 @@ public class PostgresBatchRepository : IBatchRepository
         from {tableName}
         where flag_batch = 1
         and flag_sending < 2
-        order by nomor asc
+        order by batch_no, nomor asc
         limit 1";
 
         return await conn.QueryFirstOrDefaultAsync<SkuProcessingInfo>(sql);
@@ -268,7 +266,7 @@ public class PostgresBatchRepository : IBatchRepository
             from {tableName}
             where flag_batch = 1
             and flag_sending = 1
-            order by nomor asc
+            order by batch_no, nomor asc
             limit 1
         """;
 
@@ -365,7 +363,7 @@ public class PostgresBatchRepository : IBatchRepository
         from {tableName}
         where flag_batch = 1
         and flag_sending = 1
-        order by nomor asc
+        order by batch_no, nomor asc
         limit 1
         """, transaction: tx);  //get current active sku on ptl
 

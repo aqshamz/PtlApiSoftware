@@ -2,11 +2,13 @@
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly RecoveryService _recovery;
+    private readonly DatabaseHealthService _dbHealth;
 
-    public BatchEngineBackgroundService(IServiceScopeFactory scopeFactory, RecoveryService recovery)
+    public BatchEngineBackgroundService(IServiceScopeFactory scopeFactory, RecoveryService recovery, DatabaseHealthService dbHealth)
     {
         _scopeFactory = scopeFactory;
         _recovery = recovery;
+        _dbHealth = dbHealth;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -19,6 +21,13 @@
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            if (!await _dbHealth.CheckAsync())
+            {
+                Console.WriteLine("[ENGINE] DB disconnected, pausing engine");
+                await Task.Delay(3000, stoppingToken);
+                continue;
+            }
+
             using var scope = _scopeFactory.CreateScope();
             var engine = scope.ServiceProvider.GetRequiredService<BatchEngineService>();
 

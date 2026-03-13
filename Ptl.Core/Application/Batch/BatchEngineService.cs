@@ -1,5 +1,4 @@
 ﻿using Ptl.Agent.Domain;
-using Ptl.Contracts.Dtos.Hardware;
 
 public class BatchEngineService
 {
@@ -32,6 +31,12 @@ public class BatchEngineService
 
         foreach (var gw in gateways)
         {
+            if (string.IsNullOrEmpty(gw.TabelAwal))//kalo config bolong
+            {
+                Console.WriteLine($"[ENGINE] Gateway {gw.GatewayId} missing table config");
+                continue;
+            }
+
             if (_recovery.IsRecovering(gw.GatewayId)) //jika recovery sedang jalan di gateaway tersebut, tx baru gak diambil
             {
                 Console.WriteLine($"[ENGINE] Gateway {gw.GatewayId} recovering, skip");
