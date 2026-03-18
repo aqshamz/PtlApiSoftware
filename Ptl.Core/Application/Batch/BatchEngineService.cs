@@ -33,13 +33,13 @@ public class BatchEngineService
         {
             if (string.IsNullOrEmpty(gw.TabelAwal))//kalo config bolong
             {
-                Console.WriteLine($"[ENGINE] Gateway {gw.GatewayId} missing table config");
+                PtlLog.Eng($"Gateway {gw.GatewayId} missing table config");
                 continue;
             }
 
             if (_recovery.IsRecovering(gw.GatewayId)) //jika recovery sedang jalan di gateaway tersebut, tx baru gak diambil
             {
-                Console.WriteLine($"[ENGINE] Gateway {gw.GatewayId} recovering, skip");
+                PtlLog.Eng($"Gateway {gw.GatewayId} is recovering");
                 continue;
             }
 
@@ -58,7 +58,7 @@ public class BatchEngineService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ENGINE] Gateway {gw.GatewayId} failed: {ex.Message}");
+            PtlLog.Eng($"Gateway {gw.GatewayId} failed to process: {ex.Message}");
         }
     }
 
@@ -79,6 +79,8 @@ public class BatchEngineService
         if (headerTag is not int tag)
             return;
 
+        PtlLog.Eng($"Sending data header on Gateway {gw.GatewayId}");
+
         await _display.ClearHeader(gw.GatewayId, tag);
 
         await _display.ShowHeader(gw.GatewayId, tag, $"BATCH - {batchNo}");
@@ -89,6 +91,8 @@ public class BatchEngineService
 
         foreach (var td4Tag in td4Tags)
         {
+            PtlLog.Eng($"Sending data test on tags Gateway {gw.GatewayId}");
+
             await _display.DisplayQty(gw.GatewayId, td4Tag, td4Tag);
             
             await _batchRepository.MarkTD4Checked(batchNo, td4Tag, "1", gw.IpAddress); //update td4 send
@@ -124,6 +128,8 @@ public class BatchEngineService
         if (header == null)
             return;
 
+        PtlLog.Eng($"Sending data header on Gateway {gw.GatewayId}");
+
         await _display.ClearHeader(gw.GatewayId, header.LokasiPtl);
 
         await _display.ShowHeader(gw.GatewayId, header.LokasiPtl, header.Descp);
@@ -136,6 +142,8 @@ public class BatchEngineService
 
         foreach (var row in rows)
         {
+            PtlLog.Eng($"Sending data on picking tags Gateway {gw.GatewayId}");
+
             await _display.DisplayQty(gw.GatewayId, row.LokasiPtl, row.OnPicking);
 
             var state = new TagState(

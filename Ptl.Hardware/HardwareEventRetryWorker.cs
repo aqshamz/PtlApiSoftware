@@ -27,7 +27,7 @@ public class HardwareEventRetryWorker
                     continue;
                 }
 
-                Console.WriteLine($"[RETRY] Pending events: {events.Count}");
+                PtlLog.Hw($"Pending events: {events.Count}");
 
                 var evt = events.First();
 
@@ -38,16 +38,16 @@ public class HardwareEventRetryWorker
                     if (res.IsSuccessStatusCode)
                     {
                         _store.Remove(evt);
-                        Console.WriteLine("[RETRY] Event processed");
+                        PtlLog.Hw("Event processed");
                     }
                     else
                     {
-                        Console.WriteLine($"[RETRY] API rejected event ({res.StatusCode})");
+                        PtlLog.Hw($"API rejected event ({res.StatusCode})");
                     }
                 }
                 catch
                 {
-                    Console.WriteLine("[RETRY] API unavailable");
+                    PtlLog.Hw("API unavailable");
                 }
 
                 await Task.Delay(3000);

@@ -14,7 +14,7 @@ public static class PtlInitializer
 
         Directory.SetCurrentDirectory(AppContext.BaseDirectory);
 
-        Console.WriteLine("CAPS init...");
+        PtlLog.Hw("Initialize Hardware");
 
         if (CapsAPI.AB_API_Open() <= 0)
             throw new Exception("AB_API_Open failed");
@@ -23,7 +23,8 @@ public static class PtlInitializer
 
         foreach (var gw in gateways)
         {
-            Console.WriteLine($"Opening GW {gw.GatewayId}");
+            PtlLog.Hw($"Opening Gateaway {gw.GatewayId}");
+
             CapsAPI.AB_GW_Open(gw.GatewayId);
 
             //buat dari pg
@@ -31,20 +32,16 @@ public static class PtlInitializer
 
             int diag = CapsAPI.AB_GW_TagDiag(gw.GatewayId, 0);
 
-            Console.WriteLine($"GW {gw.GatewayId} TagDiag ret={diag}");
+            PtlLog.Hw($"Gateaway {gw.GatewayId} TagDiag ret={diag}");
 
             int statusValue = diag >= 0 ? 1 : 0;
 
             OnGatewayStatusChanged?.Invoke(gw.GatewayId, statusValue);
         }
-        //Util.m_CurGwID = 0;
-
-        //Util.Dap_Setup();
-
         
-        Console.WriteLine($"GW COUNT = {CapsAPI.AB_GW_Cnt()}");
+        PtlLog.Hw($"Gateaway ready count {CapsAPI.AB_GW_Cnt()}");
 
-        Console.WriteLine("CAPS init done");
+        PtlLog.Hw("Initialize Done");
 
         _initialized = true;
     }

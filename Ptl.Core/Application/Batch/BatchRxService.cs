@@ -28,10 +28,10 @@ public class BatchRxService
         if (gw == null)
             return;
 
+        PtlLog.Rx($"Received Command {evt.Command} from Tag {evt.Tag}");
+
         // Phase 1 (batch 4)
         await HandlePhase1Async(gw, evt.Tag);
-
-        Console.WriteLine($"[RX] CMD={evt.Command} TAG={evt.Tag}");
 
         // Phase 2 Decrease
         if (evt.Command == PtlCommand.Decrease)
@@ -50,7 +50,7 @@ public class BatchRxService
                 state.Quantity
             );
 
-            Console.WriteLine($"[PH2] Decrease tag={evt.Tag} qty={state.Quantity}");
+            PtlLog.Rx($"Decrease qty into {state.Quantity} on tag {evt.Tag}");
             return;
         }
 
@@ -74,6 +74,8 @@ public class BatchRxService
         if (batchNoNullable is not int batchNo)
             return;
 
+        PtlLog.Rx($"Confirming Data Tag {tag}");
+
         await _batchRepository.MarkTD4Checked(batchNo, tag, "2", gw.IpAddress); //update td4 receive
 
         if (await _batchRepository.HasPendingTd4(batchNo, gw.IpAddress)) //check if td4 still active
@@ -89,7 +91,8 @@ public class BatchRxService
             await _display.ClearHeader(gw.GatewayId, header);
         }
 
-        Console.WriteLine($"[PH1] Batch {batchNo} completed");
+        PtlLog.Info($"Phase 1 Batch {batchNo} completed");
+
     }
 
     // =============================
@@ -102,6 +105,8 @@ public class BatchRxService
         if (!_tagRegistry.TryGet(tag, out var state))
             return;
 
+        PtlLog.Rx($"Confirming Data Tag {tag}");
+
         int finalQty = state.Quantity;
 
         var result = await _batchRepository.ConfirmPick(gw.TabelAwal, tag, finalQty, gw.IpAddress); //phase 2 logic transaction
@@ -113,7 +118,7 @@ public class BatchRxService
 
         if (!result.SkuCompleted)
         {
-            Console.WriteLine($"[PH2] SKU {result.Plu} still active");
+            PtlLog.Info($"SKU {result.Plu} still active");
             return;
         }
 
@@ -124,7 +129,7 @@ public class BatchRxService
             await _display.ClearHeader(gw.GatewayId, header.LokasiPtl);
         }
 
-        Console.WriteLine($"[PH2] SKU {result.Plu} fully completed");
+        PtlLog.Info($"Phase 2 SKU {result.Plu} completed");
 
         // =============================
         // PHASE 3 INLINE (END BATCH)
@@ -133,7 +138,7 @@ public class BatchRxService
         // Check if ALL PLU On batch is finished
         if (await _batchRepository.HasPendingPluOnBatch(result.BatchNo, gw.TabelAwal))
         {
-            Console.WriteLine($"[PH3] Batch {result.BatchNo} still has PLU pending");
+            PtlLog.Info($"Batch {result.BatchNo} still has PLU pending");
             return;
         }
 
@@ -149,6 +154,6 @@ public class BatchRxService
             endRow.Keterangan
         );
 
-        Console.WriteLine($"[PH3] Batch {result.BatchNo} fully completed");
+        PtlLog.Info($"Batch {result.BatchNo} fully completed");
     }
 }

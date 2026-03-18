@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="Ptl.Contracts/Ptl.Contracts.csproj" />
   <Project Path="Ptl.Core/Ptl.Core.csproj" />
+  <Project Path="Ptl.Gui/Ptl.Gui.csproj" Id="19243fa6-50ec-44ae-bad6-0c8449c37b97" />
   <Project Path="Ptl.Hardware/Ptl.Hardware.csproj" />
   <Project Path="WebApplication1/Ptl.Api.csproj" />
 </Solution>

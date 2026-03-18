@@ -20,8 +20,8 @@ public static class IpIndexWriter
             Encoding.ASCII
         );
 
-        Console.WriteLine("IPINDEX written:");
-        Console.WriteLine(sb.ToString());
+        PtlLog.Hw("IPINDEX written:");
+        PtlLog.Hw(sb.ToString());
     }
 }
 
