@@ -15,7 +15,7 @@
     {
         while (!_recovery.Completed)
         {
-            Console.WriteLine("[ENGINE] Waiting for recovery...");
+            PtlLog.Eng("Waiting for recovery...");
             await Task.Delay(500, stoppingToken);
         }
 
@@ -23,7 +23,7 @@
         {
             if (!await _dbHealth.CheckAsync())
             {
-                Console.WriteLine("[ENGINE] DB disconnected, pausing engine");
+                PtlLog.Eng("DB disconnected, pausing engine");
                 await Task.Delay(3000, stoppingToken);
                 continue;
             }

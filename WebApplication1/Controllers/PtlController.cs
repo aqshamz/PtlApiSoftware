@@ -20,14 +20,13 @@ public class PtlController : ControllerBase
         }
         catch (Npgsql.NpgsqlException)
         {
-            Console.WriteLine("[API] DB unavailable, RX rejected");
-
+            PtlLog.Error("DB unavailable while process transaction, RX rejected");
+            
             return StatusCode(503, "Database unavailable");
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
-
+            PtlLog.Error($"DB unavailable while process transaction, {ex.Message}");
             return StatusCode(500);
         }
 

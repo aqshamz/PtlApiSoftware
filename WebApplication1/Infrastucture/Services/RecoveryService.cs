@@ -32,7 +32,7 @@ public class RecoveryService : IHostedService, IRecoveryState
 
     public async Task StartAsync(CancellationToken ct)
     {
-        Console.WriteLine("[RECOVERY] Checking unfinished picks...");
+        PtlLog.Info("Recovery Start");
 
         var gateways = _registry.GetConnected().ToList();
 
@@ -43,7 +43,7 @@ public class RecoveryService : IHostedService, IRecoveryState
 
         Completed = true;
 
-        Console.WriteLine("[RECOVERY] Completed");
+        PtlLog.Info("Recovery Complete");
     }
 
     public async Task RecoverGateway(GatewayRuntimeInfo gw)
@@ -61,11 +61,12 @@ public class RecoveryService : IHostedService, IRecoveryState
             using var scope = _scopeFactory.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<IBatchRepository>();
 
-
+            PtlLog.Info($"Checking Phase 1 Gateway {gw.GatewayId}");
             // PHASE 1 CHECK
             if (await repo.Phase1RecoveryPending(gw.IpAddress))
             {
-                Console.WriteLine($"[RECOVERY] Gateway {gw.GatewayId} recovering");
+                PtlLog.Info($"Recovery Phase 1 Gateway {gw.GatewayId} Start");
+
                 var batchNoNullable = await repo.GetNextBatchAsync(gw.TabelAwal, 4);
 
                 if (batchNoNullable is not int batchNo)
@@ -94,10 +95,11 @@ public class RecoveryService : IHostedService, IRecoveryState
                     await repo.MarkTD4Checked(batchNo, td4Tag, "1", gw.IpAddress);
                 }
 
-                Console.WriteLine($"[RECOVERY] Phase1 restore for gateway {gw.GatewayId}");
+                PtlLog.Info($"Phase 1 Gateway {gw.GatewayId} restored");
                 return;
             }
 
+            PtlLog.Info($"Checking Phase 2 Gateway {gw.GatewayId}");
             // PHASE 2 CHECK
             var sku = await repo.GetNextSkuForPhase2(gw.TabelAwal);
             if (sku == null)
@@ -105,7 +107,7 @@ public class RecoveryService : IHostedService, IRecoveryState
 
             if (sku.FlagSending == 1)
             {
-                Console.WriteLine($"[RECOVERY] Phase2 restore {sku.BatchNo}-{sku.Plu} for gateway {gw.GatewayId}");
+                PtlLog.Info($"Recovery Phase 2 {sku.BatchNo}-{sku.Plu} for Gateway {gw.GatewayId} start");
                 await LoadSku(gw, sku.BatchNo, sku.Plu);
             }
 
@@ -117,7 +119,7 @@ public class RecoveryService : IHostedService, IRecoveryState
             {
                 _recoveringGateways.Remove(gw.GatewayId);
             }
-            Console.WriteLine($"[RECOVERY] Gateway {gw.GatewayId} finished");
+            PtlLog.Info($"Recovery Gateaway {gw.GatewayId} complete");
         }
            
     }

@@ -31,7 +31,7 @@ public class EventLoop
         byte[] buffer = new byte[255];
         int len;
 
-        Console.WriteLine("RX LOOP ACTIVE");
+        PtlLog.Hw("Rx Loop Received Message");
 
         DateTime lastGatewayCheck = DateTime.MinValue;
 
@@ -79,6 +79,7 @@ public class EventLoop
 
     private void CheckGateways()
     {
+        //PtlLog.Hw("Checking Status Gateaway");
         foreach (var gw in _gateways)
         {
             int diag = CapsAPI.AB_GW_TagDiag(gw.GatewayId, 0);
@@ -88,7 +89,7 @@ public class EventLoop
             {
                 _lastStatus[gw.GatewayId] = status;
 
-                Console.WriteLine($"[HW MONITOR] gw={gw.GatewayId} status={status}");
+                PtlLog.Hw($"Monitoring = Gateaway {gw.GatewayId} Status {status}");
 
                 OnGatewayStatusChanged?.Invoke(gw.GatewayId, status);
             }

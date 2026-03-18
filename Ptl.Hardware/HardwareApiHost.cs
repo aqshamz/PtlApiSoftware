@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Ptl.Contracts.Dtos.Hardware;
 
 namespace Ptl.Hardware;
@@ -13,6 +14,8 @@ public static class HardwareApiHost
         var builder = WebApplication.CreateBuilder();
 
         builder.WebHost.UseUrls("http://localhost:6001");
+
+        builder.Logging.ClearProviders();
 
         var app = builder.Build();
 

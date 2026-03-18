@@ -11,6 +11,10 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.WebHost.UseUrls("http://127.0.0.1:5000");
+
+builder.Logging.ClearProviders();
+
 builder.Services.AddControllers();
 
 builder.Services.AddSingleton<PostgresConnectionFactory>(); //postgredb
@@ -52,5 +56,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseCors("AllowVueApp");
+app.MapGet("/health", () => Results.Ok("ready"));
 app.MapControllers();
 app.Run();

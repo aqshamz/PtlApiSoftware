@@ -39,7 +39,7 @@ public class HardwareConfigController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine("[API] DB unavailable, loading cached gateways");
+            PtlLog.Warn("DB unavailable, loading cached gateways");
 
             if (!System.IO.File.Exists("gateways_cache_api.json")) //current json empty
                 return StatusCode(500, "Gateway configuration unavailable");
@@ -51,6 +51,12 @@ public class HardwareConfigController : ControllerBase
 
             return Ok(gateways);
         }
+    }
+
+    [HttpGet("status")]
+    public IActionResult GetStatuses()
+    {
+        return Ok(_registry.GetConnected());
     }
 
     [HttpPost("status")]
@@ -74,7 +80,7 @@ public class HardwareConfigController : ControllerBase
         }
         catch
         {
-            Console.WriteLine("[API] DB unavailable while resolving gateway");
+            PtlLog.Warn("DB unavailable while resolving gateaway");
         }
 
         if (gateway == null)
@@ -104,13 +110,15 @@ public class HardwareConfigController : ControllerBase
             }
             catch
             {
-                Console.WriteLine("[API] Failed to load gateway from cache");
+                PtlLog.Error("Failed to load gateaway from cache");
             }
         }
 
         if (gateway == null)
         {
-            Console.WriteLine($"[API] Gateway config not found for IP {request.IpAddress}");
+
+            PtlLog.Error($"Gateway config not found for IP {request.IpAddress}");
+
             return Ok();
         }
 
@@ -130,7 +138,7 @@ public class HardwareConfigController : ControllerBase
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[API] Recovery skipped: {ex.Message}");
+                PtlLog.Error($"Recovery transaction gateaway {gateway.GatewayId} skipped: {ex.Message}");
             }
 
         }
@@ -145,7 +153,7 @@ public class HardwareConfigController : ControllerBase
         }
         catch
         {
-            Console.WriteLine("[API] DB unavailable, skipping status update");
+            PtlLog.Error("DB unavailable, skipping status update");
         }
 
         return Ok();

@@ -17,11 +17,13 @@
             await conn.OpenAsync();
 
             IsHealthy = true;
+            //PtlLog.Db("DB Connected");
             return true;
         }
         catch
         {
             IsHealthy = false;
+            //PtlLog.Warn("DB Disconnected");
             return false;
         }
     }
