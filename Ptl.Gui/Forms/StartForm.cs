@@ -1,10 +1,11 @@
-﻿using System.Diagnostics;
+﻿using Ptl.Contracts.Dtos.Hardware;
+using Ptl.Gui.Forms;
+using System.Diagnostics;
 using System.Net.Http.Json;
-using Ptl.Contracts.Dtos.Hardware;
 
 namespace Ptl.Gui
 {
-    public partial class Form1 : Form
+    public partial class StartForm : Form
     {
         private ProcessLauncher _launcher = new();
         private ApiHealthChecker _healthChecker = new();
@@ -17,7 +18,7 @@ namespace Ptl.Gui
 
         private System.Windows.Forms.Timer _statusTimer = new();
 
-        public Form1()
+        public StartForm()
         {
             InitializeComponent();
         }
@@ -106,6 +107,77 @@ namespace Ptl.Gui
 
             btnStartSystem.Enabled = true;
             btnStopSystem.Enabled = false;
+        }
+
+        private async void btnSettings_Click(object sender, EventArgs e)
+        {
+            var form = new SettingsForm();
+
+            // 🔹 Load current config
+            var config = ConfigHelper.Load();
+
+            int groupZona = config.PtlSettings.GroupZona;
+           
+            string cs = config.ConnectionStrings.PgDb;
+
+            // 🔥 Parse connection string
+            var parts = cs.Split(';')
+                          .Select(x => x.Split('='))
+                          .Where(x => x.Length == 2)
+                          .ToDictionary(x => x[0], x => x[1]);
+
+            string host = parts.ContainsKey("Host") ? parts["Host"] : "";
+            string port = parts.ContainsKey("Port") ? parts["Port"] : "";
+            string db = parts.ContainsKey("Database") ? parts["Database"] : "";
+            string user = parts.ContainsKey("Username") ? parts["Username"] : "";
+            string passwordOld = parts.ContainsKey("Password") ? parts["Password"] : "";
+
+            // 🔹 Send to form
+            form.LoadSettings(groupZona, host, port, db, user, passwordOld);
+
+            // 🔹 Show form
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                var password = form.Password ?? ExtractPasswordFromExisting(cs);
+
+                var newCs = $"Host={form.Host};Port={form.Port};Database={form.DbName};Username={form.Username};Password={password}";
+
+                SaveSettings(newCs, form.GroupZona);
+
+                AppendLog("[SETTINGS] Saved");
+
+                // restart system to apply
+                btnStopSystem_Click(null, null);
+                await Task.Delay(1000);
+                btnStartSystem_Click(null, null);
+            }
+        }
+
+        private string ExtractPasswordFromExisting(string cs)
+        {
+            var parts = cs.Split(';')
+                          .Select(x => x.Split('='))
+                          .Where(x => x.Length == 2)
+                          .ToDictionary(x => x[0], x => x[1]);
+
+            return parts.ContainsKey("Password") ? parts["Password"] : "";
+        }
+
+        private void SaveSettings(string connectionString, int groupZona)
+        {
+            try
+            {
+                var config = ConfigHelper.Load();
+
+                config.ConnectionStrings.PgDb = connectionString;
+                config.PtlSettings.GroupZona = groupZona;
+
+                ConfigHelper.Save(config);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save settings: {ex.Message}");
+            }
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
