@@ -17,6 +17,10 @@ builder.Logging.ClearProviders();
 
 builder.Services.AddControllers();
 
+builder.Services.Configure<PtlSettings>(
+    builder.Configuration.GetSection("PtlSettings")
+); //ptl group zona
+
 builder.Services.AddSingleton<PostgresConnectionFactory>(); //postgredb
 
 builder.Services.AddScoped<IBatchRepository, PostgresBatchRepository>();//pgrepository get data tx

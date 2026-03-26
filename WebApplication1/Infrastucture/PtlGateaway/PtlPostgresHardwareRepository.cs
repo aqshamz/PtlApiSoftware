@@ -1,14 +1,18 @@
 ﻿using Dapper;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Ptl.Contracts.Dtos.Hardware;
+using static Dapper.SqlMapper;
 
 public class PtlPostgresHardwareRepository
 {
     private readonly string _cs;
+    private readonly PtlSettings _settings;
 
-    public PtlPostgresHardwareRepository(IConfiguration cfg)
+    public PtlPostgresHardwareRepository(IConfiguration cfg, IOptions<PtlSettings> settings)
     {
         _cs = cfg.GetConnectionString("PgDb")!;
+        _settings = settings.Value;
     }
 
     public IEnumerable<PtlGatewayConfigExtended> GetGateways()
@@ -27,9 +31,10 @@ public class PtlPostgresHardwareRepository
             from ptl_master_ip_hub pmih
             join ptl_master_group_zona pmgz 
                 on pmih.zona = pmgz.zona
-            where pmih.group_zona = 2
+            where pmih.group_zona = @GroupZona
             order by pmih.urutan_cek;
-            """
+            """,
+            new { GroupZona = _settings.GroupZona }
         );
     }
 

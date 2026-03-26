@@ -1,6 +1,6 @@
 ﻿namespace Ptl.Gui
 {
-    partial class Form1
+    partial class StartForm
     {
         /// <summary>
         ///  Required designer variable.
@@ -39,6 +39,7 @@
             IP = new DataGridViewTextBoxColumn();
             Status = new DataGridViewTextBoxColumn();
             groupBox1 = new GroupBox();
+            btnSettings = new Button();
             ((System.ComponentModel.ISupportInitialize)dgvGateways).BeginInit();
             groupBox1.SuspendLayout();
             SuspendLayout();
@@ -154,6 +155,15 @@
             groupBox1.Text = "System Status";
             groupBox1.Enter += groupBox1_Enter;
             // 
+            // btnSettings
+            // 
+            btnSettings.Location = new Point(619, 209);
+            btnSettings.Name = "btnSettings";
+            btnSettings.Size = new Size(56, 55);
+            btnSettings.TabIndex = 12;
+            btnSettings.Text = "⚙";
+            btnSettings.Click += btnSettings_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -164,6 +174,7 @@
             Controls.Add(btnStopSystem);
             Controls.Add(btnStartSystem);
             Controls.Add(txtLogs);
+            Controls.Add(btnSettings);
             Name = "Form1";
             Text = "PTL Control Panel";
             Load += Form1_Load;
@@ -185,5 +196,6 @@
         private DataGridViewTextBoxColumn IP;
         private DataGridViewTextBoxColumn Status;
         private GroupBox groupBox1;
+        private Button btnSettings;
     }
 }
