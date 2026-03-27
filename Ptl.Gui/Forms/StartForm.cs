@@ -148,7 +148,7 @@ namespace Ptl.Gui
 
                 // restart system to apply
                 btnStopSystem_Click(null, null);
-                await Task.Delay(1000);
+                await Task.Delay(2000);
                 btnStartSystem_Click(null, null);
             }
         }
