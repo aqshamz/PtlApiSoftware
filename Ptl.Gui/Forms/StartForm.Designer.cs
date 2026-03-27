@@ -40,8 +40,11 @@
             Status = new DataGridViewTextBoxColumn();
             groupBox1 = new GroupBox();
             btnSettings = new Button();
+            groupControls = new GroupBox();
+            lblSeparator = new Label();
             ((System.ComponentModel.ISupportInitialize)dgvGateways).BeginInit();
             groupBox1.SuspendLayout();
+            groupControls.SuspendLayout();
             SuspendLayout();
             // 
             // txtLogs
@@ -58,23 +61,24 @@
             // btnStartSystem
             // 
             btnStartSystem.BackColor = Color.LightGreen;
-            btnStartSystem.Location = new Point(232, 209);
+            btnStartSystem.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnStartSystem.Location = new Point(150, 30);
             btnStartSystem.Name = "btnStartSystem";
-            btnStartSystem.RightToLeft = RightToLeft.No;
-            btnStartSystem.Size = new Size(143, 55);
-            btnStartSystem.TabIndex = 5;
-            btnStartSystem.Text = " Start System";
+            btnStartSystem.Size = new Size(140, 40);
+            btnStartSystem.TabIndex = 0;
+            btnStartSystem.Text = "▶ Start";
             btnStartSystem.UseVisualStyleBackColor = false;
             btnStartSystem.Click += btnStartSystem_Click;
             // 
             // btnStopSystem
             // 
             btnStopSystem.BackColor = Color.LightCoral;
-            btnStopSystem.Location = new Point(436, 209);
+            btnStopSystem.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnStopSystem.Location = new Point(310, 30);
             btnStopSystem.Name = "btnStopSystem";
-            btnStopSystem.Size = new Size(143, 55);
-            btnStopSystem.TabIndex = 6;
-            btnStopSystem.Text = "Stop System";
+            btnStopSystem.Size = new Size(140, 40);
+            btnStopSystem.TabIndex = 1;
+            btnStopSystem.Text = "⏹ Stop";
             btnStopSystem.UseVisualStyleBackColor = false;
             btnStopSystem.Click += btnStopSystem_Click;
             // 
@@ -122,7 +126,7 @@
             dgvGateways.Name = "dgvGateways";
             dgvGateways.RowHeadersVisible = false;
             dgvGateways.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvGateways.Size = new Size(470, 200);
+            dgvGateways.Size = new Size(470, 171);
             dgvGateways.TabIndex = 10;
             dgvGateways.CellContentClick += dgvGateways_CLick;
             // 
@@ -157,30 +161,55 @@
             // 
             // btnSettings
             // 
-            btnSettings.Location = new Point(619, 209);
+            btnSettings.BackColor = Color.LightGray;
+            btnSettings.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnSettings.Location = new Point(500, 30);
             btnSettings.Name = "btnSettings";
-            btnSettings.Size = new Size(56, 55);
-            btnSettings.TabIndex = 12;
-            btnSettings.Text = "⚙";
+            btnSettings.Size = new Size(140, 40);
+            btnSettings.TabIndex = 3;
+            btnSettings.Text = "⚙ Settings";
+            btnSettings.UseVisualStyleBackColor = false;
             btnSettings.Click += btnSettings_Click;
             // 
-            // Form1
+            // groupControls
+            // 
+            groupControls.Controls.Add(btnStartSystem);
+            groupControls.Controls.Add(btnStopSystem);
+            groupControls.Controls.Add(lblSeparator);
+            groupControls.Controls.Add(btnSettings);
+            groupControls.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            groupControls.Location = new Point(20, 180);
+            groupControls.Name = "groupControls";
+            groupControls.Size = new Size(747, 84);
+            groupControls.TabIndex = 12;
+            groupControls.TabStop = false;
+            groupControls.Text = "Controls";
+            // 
+            // lblSeparator
+            // 
+            lblSeparator.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            lblSeparator.Location = new Point(470, 32);
+            lblSeparator.Name = "lblSeparator";
+            lblSeparator.Size = new Size(20, 30);
+            lblSeparator.TabIndex = 2;
+            lblSeparator.Text = "|";
+            // 
+            // StartForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
             Controls.Add(groupBox1);
             Controls.Add(dgvGateways);
-            Controls.Add(btnStopSystem);
-            Controls.Add(btnStartSystem);
+            Controls.Add(groupControls);
             Controls.Add(txtLogs);
-            Controls.Add(btnSettings);
-            Name = "Form1";
+            Name = "StartForm";
             Text = "PTL Control Panel";
             Load += Form1_Load;
             ((System.ComponentModel.ISupportInitialize)dgvGateways).EndInit();
             groupBox1.ResumeLayout(false);
             groupBox1.PerformLayout();
+            groupControls.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -197,5 +226,7 @@
         private DataGridViewTextBoxColumn Status;
         private GroupBox groupBox1;
         private Button btnSettings;
+        private GroupBox groupControls;
+        private Label lblSeparator;
     }
 }
