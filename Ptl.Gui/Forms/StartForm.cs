@@ -53,8 +53,26 @@ namespace Ptl.Gui
             UpdateHardwareStatus(false);
             UpdateDbStatus(false);
 
-            string apiPath = @"..\..\..\..\WebApplication1\bin\Debug\net8.0\Ptl.Api.exe";
-            string hwPath = @"..\..\..\..\Ptl.Hardware\bin\Debug\net8.0-windows\Ptl.Hardware.exe";
+            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+
+            // 1. Coba cari di folder yang sama (Production ready)
+            string apiPath = Path.Combine(basePath, "Ptl.Api.exe");
+            string hwPath = Path.Combine(basePath, "Ptl.Hardware.exe");
+
+            // 3. Validasi Final agar tidak bingung (Mencegah error Exception jelek)
+            if (!File.Exists(apiPath))
+            {
+                MessageBox.Show($"File Sistem Hilang!\n\nTidak dapat menemukan:\n{apiPath}\n\nPastikan Ptl.Api.exe sudah di-publish dan dimasukkan ke dalam Installer Anda.", "Error Fatal", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                btnStartSystem.Enabled = true;
+                return;
+            }
+
+            if (!File.Exists(hwPath))
+            {
+                MessageBox.Show($"File Sistem Hilang!\n\nTidak dapat menemukan:\n{hwPath}\n\nPastikan Ptl.Hardware.exe sudah di-publish dan dimasukkan ke dalam Installer Anda.", "Error Fatal", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                btnStartSystem.Enabled = true;
+                return;
+            }
 
             _apiProcess = _launcher.Start(apiPath, msg => AppendLog("[API] " + msg));
 
